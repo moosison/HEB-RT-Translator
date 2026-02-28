@@ -7,3 +7,5 @@
 .externalNativeBuild
 app/.cxx
 app/release
+.idea/caches/
+.claude/

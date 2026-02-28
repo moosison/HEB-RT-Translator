@@ -142,6 +142,13 @@ public class TTS {
         }
     }
 
+    public int synthesizeToFile(CharSequence text, Bundle params, java.io.File file, String utteranceId) {
+        if (isActive()) {
+            return tts.synthesizeToFile(text, params, file, utteranceId);
+        }
+        return TextToSpeech.ERROR;
+    }
+
     public static void getSupportedLanguages(Context context, SupportedLanguagesListener responseListener){
         synchronized (lock) {
             if (responseListener != null) {

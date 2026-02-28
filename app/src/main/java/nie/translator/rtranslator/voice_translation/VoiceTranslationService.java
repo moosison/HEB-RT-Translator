@@ -163,6 +163,7 @@ public abstract class VoiceTranslationService extends GeneralService {
             public void onInit() {
                 if(tts != null) {
                     tts.setOnUtteranceProgressListener(ttsListener);
+                    onTTSReady();
                 }
             }
 
@@ -174,6 +175,10 @@ public abstract class VoiceTranslationService extends GeneralService {
             }
         });
     }
+
+    /** Called on the main thread after TTS is successfully initialized. Subclasses may override
+     *  to replace or augment the default UtteranceProgressListener. */
+    protected void onTTSReady() {}
 
     public abstract void initializeVoiceRecorder();
 

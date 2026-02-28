@@ -73,6 +73,10 @@
         <code_NLLB>glg_Latn</code_NLLB>
     </language>
     <language>
+        <code>he</code>
+        <code_NLLB>heb_Hebr</code_NLLB>
+    </language>
+    <language>
         <code>hr</code>
         <code_NLLB>hrv_Latn</code_NLLB>
     </language>
