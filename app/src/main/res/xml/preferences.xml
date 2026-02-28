@@ -46,7 +46,7 @@
         app:allowDividerAbove="true"
         app:allowDividerBelow="true">
         <nie.translator.rtranslator.settings.SupportLanguagesQuality
-            android:defaultValue="false"
+            android:defaultValue="true"
             android:key="languagesNNQualityLow"
             android:title="@string/preference_title_languages_quality"
             android:summary="@string/preference_description_languages_quality"
@@ -73,6 +73,12 @@
             android:key="tts"
             android:title="@string/preference_title_tts"
             android:summary="@string/preference_description_tts"
+            app:iconSpaceReserved="false" />
+        <androidx.preference.SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:key="lectureModeEnabled"
+            android:title="@string/preference_title_lecture_mode"
+            android:summary="@string/preference_description_lecture_mode"
             app:iconSpaceReserved="false" />
     </androidx.preference.PreferenceCategory>
     <androidx.preference.PreferenceCategory

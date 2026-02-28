@@ -29,6 +29,8 @@ import android.os.Messenger;
 import android.os.PowerManager;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
+import java.io.File;
+import nie.translator.rtranslator.tools.StereoAudioRouter;
 
 import androidx.annotation.Nullable;
 import java.util.ArrayList;
@@ -125,33 +127,22 @@ public abstract class VoiceTranslationService extends GeneralService {
             }
 
             @Override
-            public void onDone(String s) {
-                synchronized (mLock) {
-                    if (utterancesCurrentlySpeaking > 0) {
-                        utterancesCurrentlySpeaking--;
-                    }
-                    if (utterancesCurrentlySpeaking == 0) {
-                        /*
-                        // start the task because this thread is not allowed to start the Recorder
-                        StartVoiceRecorderTask startVoiceRecorderTask = new StartVoiceRecorderTask();
-                        startVoiceRecorderTask.execute(VoiceTranslationService.this);*/
-                        mainHandler.postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (shouldDeactivateMicDuringTTS()) {
-                                    if(!isMicMute) {
-                                        startVoiceRecorder();
-                                    }
-                                    notifyMicActivated();
-                                }
-                            }
-                        }, 500);  //4000
-                    }
+            public void onDone(String utteranceId) {
+                if (utteranceId != null && utteranceId.startsWith("lm_")) {
+                    // Lecture mode: synthesize-to-file finished — now play via right earbud channel.
+                    File wavFile = new File(getCacheDir(), utteranceId + ".wav");
+                    StereoAudioRouter.playRightChannelFromWav(wavFile, () -> {
+                        wavFile.delete();
+                        onTtsDone();
+                    });
+                } else {
+                    onTtsDone();
                 }
             }
 
             @Override
             public void onError(String s) {
+                onTtsDone();
             }
         };
         initializeTTS();
@@ -179,6 +170,38 @@ public abstract class VoiceTranslationService extends GeneralService {
     /** Called on the main thread after TTS is successfully initialized. Subclasses may override
      *  to replace or augment the default UtteranceProgressListener. */
     protected void onTTSReady() {}
+
+    /** Shared "TTS utterance finished" logic used by both normal and lecture-mode paths. */
+    private void onTtsDone() {
+        synchronized (mLock) {
+            if (utterancesCurrentlySpeaking > 0) {
+                utterancesCurrentlySpeaking--;
+            }
+            if (utterancesCurrentlySpeaking == 0) {
+                mainHandler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (shouldDeactivateMicDuringTTS()) {
+                            if (!isMicMute) {
+                                startVoiceRecorder();
+                            }
+                            notifyMicActivated();
+                        }
+                    }
+                }, 500);
+            }
+        }
+    }
+
+    /**
+     * Returns true when lecture mode is active.
+     * In lecture mode the mic never pauses and TTS is routed to the right Bluetooth earbud channel
+     * via {@link StereoAudioRouter}, so it works with any A2DP-connected earbuds.
+     */
+    protected boolean isLectureModeEnabled() {
+        return getSharedPreferences("default", Context.MODE_PRIVATE)
+                .getBoolean("lectureModeEnabled", false);
+    }
 
     public abstract void initializeVoiceRecorder();
 
@@ -269,18 +292,24 @@ public abstract class VoiceTranslationService extends GeneralService {
                     stopVoiceRecorder();
                     notifyMicDeactivated();   // we notify the client
                 }
-                if (tts.getVoice() != null && language.equals(new CustomLocale(tts.getVoice().getLocale()))) {
-                    tts.speak(result, TextToSpeech.QUEUE_ADD, null, "c01");
+                if (tts.getVoice() == null || !language.equals(new CustomLocale(tts.getVoice().getLocale()))) {
+                    tts.setLanguage(language, this);
+                }
+                if (isLectureModeEnabled()) {
+                    // Synthesize to a uniquely-named WAV; ttsListener.onDone() will play it
+                    // via StereoAudioRouter on the right ear channel of any Bluetooth earbuds.
+                    String uid = "lm_" + System.currentTimeMillis();
+                    tts.synthesizeToFile(result, null, new File(getCacheDir(), uid + ".wav"), uid);
                 } else {
-                    tts.setLanguage(language,this);
                     tts.speak(result, TextToSpeech.QUEUE_ADD, null, "c01");
                 }
             }
         }
     }
 
+    /** In lecture mode the mic stays on continuously; only pause it in normal conversation mode. */
     protected boolean shouldDeactivateMicDuringTTS() {
-        return true;
+        return !isLectureModeEnabled();
     }
 
     protected boolean isBluetoothHeadsetConnected() {

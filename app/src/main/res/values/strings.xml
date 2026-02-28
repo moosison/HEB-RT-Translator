@@ -156,6 +156,8 @@
     <string name="preference_description_speech_timeout">Select the time after you stop talking to send the transcribed text</string>
     <string name="preference_description_prev_voice_duration">Select the length of the recording before you start speaking that will be included in the voice recognition</string>
     <string name="preference_description_beam_size">Set the beam size of the beam search algorithm, to improve translation quality at the expense of speed (only for text translation)</string>
+    <string name="preference_title_lecture_mode">Lecture mode</string>
+    <string name="preference_description_lecture_mode">Hear translations through any Bluetooth earbuds while listening to a speaker. The mic keeps running and the translation plays in the right ear channel.</string>
     <string name="conversation_mode" >Conversation</string>
     <string name="conversation_mode_running" >Conversation mode is running...</string>
     <string name="walkietalkie_mode" >WalkieTalkie</string>
